@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ibrahim</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html, body {
+  height: 100%;
+}
+
+body {
+  background: #000;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  cursor: crosshair;
+  display: flex;
+  align-items: center;
+}
+
+header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+orz {
+  font-size: 1rem;
+  font-family: monospace;
+}
+
+orz:nth-child(1) {
+  flex: 1;
+  text-align: right;
+}
+
+orz:nth-child(2) {
+  color: lime;
+  text-align: center;
+  opacity: 1;
+}
+
+orz:nth-child(2).ticking {
+  color: yellow;
+}
+
+orz:nth-child(3) {
+  flex: 1;
+  text-align: left;
+}
+</style>
+</head>
+<body>
+<header><orz>ibrah</orz><orz>i</orz><orz>m</orz></header>
+<script>
+const [__, temp, late, ___] = ['[', 'ibrah', 'm', '@localhost ~]$']
+const steps = [...Array(5)].map((_, n) => [temp.slice(0, temp.length - n), n + 1, late].join(''))
+const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n), n + 1, late + ___])]
+
+
+       //////////////////////////////////////////////////
+      // yo. i hate semicolons and love esoteric code //
+        //''''''''''''''''''''''''''''''''''''''''''''
+[-0.0];
+
+
+(() => {
+  const [ibrah, i, m] = document.querySelectorAll('orz')
+  let t = 0, d = -1
+  function tick() {
+    document.title = `${steps[t]} said: yo`
+    const [prefix, n, suffix] = leaps[t]
+    ibrah.innerText = prefix
+    i.innerText = n
+    m.innerText = suffix
+    if (t == 0 || t == steps.length - 1) {
+      d = -d
+      i.classList.remove('ticking')
+      clearInterval(tickLoop)
+      setTimeout(resume, d > 0 ? 1200 : 1800)
+    }
+    t += d
+  }
+  
+  let tickLoop
+  function resume() {
+    i.classList.add('ticking')
+    tickLoop = setInterval(tick, 150)
+    tick()
+  }
+
+  resume()
+})()
+</script>
+</body>
+</html>
