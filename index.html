@@ -26,8 +26,20 @@ body {
   white-space: pre;
 }
 
-crud {
+cooked {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
   text-align: right;
+}
+
+cracked {
+  background: #222;
+  border: 1px solid #c66;
+  padding: 0.5rem;
+  margin: 0.5rem;
+  max-width: fit-content;
+  display: none;
 }
 
 @media screen and (max-width: 480px) {
@@ -38,8 +50,13 @@ crud {
     justify-content: center;
   }
 
-  crud {
-    text-align: left;
+  cooked {
+    align-items: start;
+    flex-direction: column-reverse;
+  }
+
+  cracked {
+    margin-left: 0;
   }
 }
 
@@ -55,6 +72,19 @@ doomed {
   color: cyan;
 }
 
+a {
+  color: cyan;
+  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+
+a:hover {
+  color: yellow;
+  background-color: magenta;
+}
+
 period {
   color: magenta;
 }
@@ -65,13 +95,21 @@ periodt {
 </style>
 </head>
 <body>
+<cooked>
 <crud><mogging><orz>ibrah</orz><orz>i</orz><orz>m</orz></mogging></crud>
+<cracked>todo</cracked>
+</cooked>
 <dashboard><doomed>echo</doomed> when im not busy reaping<period>,</period> \
 im usually sowing the seeds    \
 of my own destruction<period>...</period>       \
                                \
-i like making dumb shit        \
-and breaking things <period>:)</period>         \
+resume:                        \
+<period>-</period> part<period>-</period>time yapper             \
+<period>-</period> full<period>-</period>time slacker            \
+<period>-</period> D1 over<period>-</period>thinker<period>/</period>complicator  \
+<period>-</period> quantum<period>-</period>achiever             \
+<period>-</period> not like the others<period>~</period>         \
+lost<period>?</period> <a target="_blank" href="resume.pdf"><span style="position: absolute; background-image: url(corpa96.webp); background-size: 1.5em; width: 1.5em; height: 1.5em;"></span>   corpa.pdf</a>             \
                                \
 cooked but cooking<period>.</period></dashboard>
 <periodt>fax<af></af>.</periodt>
