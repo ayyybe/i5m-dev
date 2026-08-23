@@ -223,7 +223,11 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
   const cvs = document.getElementById('screen')
   const ctx = cvs.getContext('2d')
   const dash = document.querySelector('dashboard')
-  const BIO = dash.innerHTML
+  // every line is its own element from the outset, so the hitbox can follow the
+  // text rather than the block. renders identically: brik is an unstyled inline
+  // tag until phase 3 adds .dead to it.
+  const BIO = dash.innerHTML.split('\n').map(l => '<brik>' + l + '</brik>').join('\n')
+  dash.innerHTML = BIO
   const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace'
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v
   const rnd = (a, b) => a + Math.random() * (b - a)
@@ -468,6 +472,28 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
 
   // the content is not one box. the name, the penguin and the bio are three
   // separate walls, otherwise the logo bounces off a lot of empty black.
+  // monospace and white-space:pre, so columns are uniform. one span per run of
+  // non-space characters, which hollows out the gaps inside a line as well as
+  // the ends. returns null when the line has no ink at all.
+  function textRuns(el) {
+    if (!el) return null
+    const b = el.getBoundingClientRect()
+    if (b.width < 1 || b.height < 1) return null
+    const txt = el.textContent || ''
+    const n = txt.length
+    if (!n) return null
+    const cw = b.width / n
+    const runs = []
+    let a = -1
+    for (let i = 0; i <= n; i++) {
+      const ink = i < n && txt[i] !== ' '
+      if (ink && a < 0) a = i
+      if (!ink && a >= 0) { runs.push({ l: b.left + a * cw, r: b.left + i * cw }); a = -1 }
+    }
+    if (!runs.length) return null
+    return { runs, top: b.top, bottom: b.bottom, left: runs[0].l, right: runs[runs.length - 1].r }
+  }
+
   function measure() {
     walls = []
     const put = (el, brick) => {
@@ -478,15 +504,22 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
     }
     const nameEl = document.querySelector('mogging')
     const pengEl = document.querySelector('cracked img')
-    put(nameEl, false)
+    const inked = (el, brick) => {
+      const t = textRuns(el)
+      if (!t) return
+      walls.push({
+        l: t.left - 1, t: t.top - 1, r: t.right + 1, b: t.bottom + 1,
+        el, brick, runs: t.runs.map(r => ({ l: r.l - 1, r: r.r + 1 }))
+      })
+    }
+    inked(nameEl, false)
     put(pengEl, false)
     // the penguin collides as its silhouette, not its box. otherwise the gaps
     // inside the box are unreachable, and now that they are not camping either
     // they would be free hiding spots.
     const pw = walls[walls.length - 1]
     if (pw && pw.el === pengEl) pw.mask = PENG
-    if (state === BRK) document.querySelectorAll('brik:not(.dead)').forEach(el => put(el, true))
-    else put(dash, false)
+    document.querySelectorAll('brik:not(.dead)').forEach(el => inked(el, state === BRK))
 
     buildZones()
   }
@@ -499,8 +532,12 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
     const zone = (l, t, r, b) => zones.push({ l: l - CAMP_PAD, t: t - CAMP_PAD, r: r + CAMP_PAD, b: b + CAMP_PAD })
     const dim = (l, t, r, b) => dims.push({ l: l - CAMP_PAD, t: t - CAMP_PAD, r: r + CAMP_PAD, b: b + CAMP_PAD })
     const box = el => (el ? el.getBoundingClientRect() : null)
-    const nb = box(nameEl)
-    if (nb && nb.width > 0) { zone(nb.left, nb.top, nb.right, nb.bottom); dim(nb.left, nb.top, nb.right, nb.bottom) }
+    const inkZones = el => {
+      const t = textRuns(el)
+      if (!t) return
+      for (const r of t.runs) { zone(r.l, t.top, r.r, t.bottom); dim(r.l, t.top, r.r, t.bottom) }
+    }
+    inkZones(nameEl)
     const pb = box(pengEl)
     if (pb && pb.width > 0) {
       if (PENG.any) {
@@ -516,8 +553,9 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
       // the bird is not, so dimming the silhouette would leave it half lit.
       dim(pb.left, pb.top, pb.right, pb.bottom)
     }
-    const db = box(dash)
-    if (db && db.width > 0) { zone(db.left, db.top, db.right, db.bottom); dim(db.left, db.top, db.right, db.bottom) }
+    // per line, trimmed. the text does not animate, so unlike the gif the dim
+    // can follow the hitbox exactly.
+    document.querySelectorAll('brik:not(.dead)').forEach(inkZones)
   }
 
   // off the page counts too, otherwise you just park the mouse outside
@@ -534,6 +572,17 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
   // was hit, which is what the bounce then resolves against.
   function solidAt(x0, y0, x1, y1, o) {
     if (x1 <= o.l || x0 >= o.r || y1 <= o.t || y0 >= o.b) return null
+    if (o.runs) {
+      // pick the run that is cheapest to escape. unioning them would span the
+      // gap between two words and shove things out of empty space.
+      let best = null, bestPen = Infinity
+      for (const rn of o.runs) {
+        if (rn.r <= x0 || rn.l >= x1) continue
+        const pen = Math.min(x1 - rn.l, rn.r - x0, y1 - o.t, o.b - y0)
+        if (pen < bestPen) { bestPen = pen; best = { l: rn.l, t: o.t, r: rn.r, b: o.b } }
+      }
+      return best
+    }
     if (!o.mask || !o.mask.any) return o
     const m = o.mask
     const sx = (o.r - o.l) / m.iw, sy = (o.b - o.t) / m.ih
@@ -930,8 +979,11 @@ const leaps = [[...Array(5)].map((_, n) => [__ + temp.slice(0, temp.length - n),
     state = BRK
     bits = []
     toast = null
-    dash.innerHTML = BIO.split('\n').map(l => '<brik>' + l + '</brik>').join('\n')
-    bricksTotal = document.querySelectorAll('brik').length
+    dash.innerHTML = BIO
+    // a line with nothing visible on it has no hitbox, so the ball could never
+    // clear it and the round would be unwinnable
+    document.querySelectorAll('brik').forEach(el => { if (!textRuns(el)) el.classList.add('dead') })
+    bricksTotal = document.querySelectorAll('brik:not(.dead)').length
     measure()
     logos = [newBall()]
     eject(logos[0])
